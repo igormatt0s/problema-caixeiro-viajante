@@ -1,8 +1,8 @@
-Cidades: 3, Tempo: 0.00059 segundos
-Cidades: 4, Tempo: 0.00033 segundos
-Cidades: 5, Tempo: 0.00054 segundos
-Cidades: 6, Tempo: 0.00109 segundos
-Cidades: 7, Tempo: 0.00347 segundos
-Cidades: 8, Tempo: 0.02587 segundos
-Cidades: 9, Tempo: 0.23904 segundos
-Cidades: 10, Tempo: 2.35585 segundos
+Cidades: 3, Tempo: 0.00052 segundos
+Cidades: 4, Tempo: 0.00038 segundos
+Cidades: 5, Tempo: 0.00044 segundos
+Cidades: 6, Tempo: 0.00116 segundos
+Cidades: 7, Tempo: 0.00657 segundos
+Cidades: 8, Tempo: 0.04607 segundos
+Cidades: 9, Tempo: 0.38616 segundos
+Cidades: 10, Tempo: 3.16986 segundos
