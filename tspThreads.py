@@ -1,11 +1,40 @@
 # Código Paralelo (Threads) para o Problema do Caixeiro Viajante
-from multiprocessing.dummy import Pool as ThreadPool  # Substituto para ThreadPoolExecutor
+from multiprocessing import Pool  # Usando multiprocessing
 from utils import carregar_cidades, medir_tempo_execucao, precompute_factorial, nth_permutation, custo_caminho, next_permutation, salvar_tempos, gerar_grafico
 
-# Função para resolver o TSP usando paralelismo com divisão do trabalho
+# Função de nível superior para processar um bloco de permutações
+def processar_bloco(args):
+    thread_id, iter_per_process, extra, total_permutacoes, cidades_restantes, todas_cidades, matriz, factorial = args
+    melhor_caminho_local = None
+    melhor_custo_local = float('inf')
+
+    inicio = thread_id * iter_per_process + min(thread_id, extra)
+    fim = inicio + iter_per_process + (1 if thread_id < extra else 0)
+
+    # Verifica se o início está dentro do intervalo válido
+    if inicio >= total_permutacoes:
+        return None, float('inf')
+
+    # Gerar a permutação inicial para este bloco
+    permutacao = nth_permutation(cidades_restantes, inicio + 1, factorial)
+
+    for _ in range(fim - inicio):
+        caminho_atual = [todas_cidades[0]] + permutacao + [todas_cidades[0]]
+        custo_atual = custo_caminho(matriz, caminho_atual)
+
+        # Atualizar o melhor caminho local
+        if custo_atual < melhor_custo_local:
+            melhor_custo_local = custo_atual
+            melhor_caminho_local = caminho_atual
+
+        # Gera a próxima permutação
+        next_permutation(permutacao)
+
+    return melhor_caminho_local, melhor_custo_local
+
 def tsp_paralelo(matriz, todas_cidades):
-    melhor_caminho = None
-    melhor_custo = float('inf')
+    melhor_caminho_global = None
+    melhor_custo_global = float('inf')
     cidades_restantes = todas_cidades[1:]
 
     # Pré-computar o fatorial para controle das permutações
@@ -15,40 +44,27 @@ def tsp_paralelo(matriz, todas_cidades):
     total_permutacoes = factorial[len(cidades_restantes)]
 
     # Configuração para divisão do trabalho
-    num_threads = 4  # Ajuste o número de threads conforme necessário
-    iter_per_thread = total_permutacoes // num_threads
-    extra = total_permutacoes % num_threads
+    num_processos = 4
+    iter_per_process = total_permutacoes // num_processos
+    extra = total_permutacoes % num_processos
 
-    # Função para processar um bloco de permutações
-    def processar_bloco(thread_id):
-        nonlocal melhor_caminho, melhor_custo
-        inicio = thread_id * iter_per_thread + min(thread_id, extra)
-        fim = inicio + iter_per_thread + (1 if thread_id < extra else 0)
+    # Argumentos a serem passados para cada processo
+    args = [
+        (i, iter_per_process, extra, total_permutacoes, cidades_restantes, todas_cidades, matriz, factorial)
+        for i in range(num_processos)
+    ]
 
-        # Verifica se o início está dentro do intervalo válido
-        if inicio >= total_permutacoes:
-            return
+    # Usar multiprocessing.Pool para paralelismo
+    with Pool(num_processos) as pool:
+        resultados = pool.map(processar_bloco, args)
 
-        # Gerar a permutação inicial para este bloco
-        permutacao = nth_permutation(cidades_restantes, inicio + 1, factorial)
+    # Consolida os resultados globais
+    for caminho, custo in resultados:
+        if custo < melhor_custo_global:
+            melhor_custo_global = custo
+            melhor_caminho_global = caminho
 
-        for _ in range(fim - inicio):
-            caminho_atual = [todas_cidades[0]] + permutacao + [todas_cidades[0]]
-            custo_atual = custo_caminho(matriz, caminho_atual)
-
-            # Atualizar o melhor caminho de forma segura
-            if custo_atual < melhor_custo:
-                melhor_custo = custo_atual
-                melhor_caminho = caminho_atual
-
-            # Gera a próxima permutação
-            next_permutation(permutacao)
-
-    # Usar ThreadPool para paralelismo
-    with ThreadPool(num_threads) as pool:
-        pool.map(processar_bloco, range(num_threads))
-
-    return melhor_caminho, melhor_custo
+    return melhor_caminho_global, melhor_custo_global
 
 # Main para execução
 if __name__ == "__main__":
